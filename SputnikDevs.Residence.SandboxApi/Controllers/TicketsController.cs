@@ -1,3 +1,5 @@
+using System;
+using System.Linq;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SputnikDevs.Residence.SandboxApi.Data;
@@ -13,6 +15,7 @@ public class TicketsController : ControllerBase
 {
     private readonly SandboxDbContext _context;
     private readonly ILogger<TicketsController> _logger;
+    private static readonly string[] AllowedRoles = ["Student", "Technician", "Admin"];
 
     public TicketsController(SandboxDbContext context, ILogger<TicketsController> logger)
     {
@@ -184,7 +187,9 @@ public class TicketsController : ControllerBase
     public async Task<ActionResult<TicketCommentDto>> AddComment(Guid id, [FromBody] AddTicketCommentDto dto)
     {
         // Retrieve the full entity from the database
-        var ticket = await _context.MaintenanceTickets.FirstOrDefaultAsync(t => t.Id == id);
+        var ticket = await _context.MaintenanceTickets
+            .AsNoTracking()
+            .FirstOrDefaultAsync(t => t.Id == id);
 
         // Perform the null check
         if (ticket == null)
@@ -196,23 +201,29 @@ public class TicketsController : ControllerBase
         string cleanContent = dto.Content?.Trim() ?? string.Empty;
 
         if (new[] { cleanAuthorName, cleanAuthorRole, cleanContent }.Any(string.IsNullOrEmpty))
-            return BadRequest("Author name, author role or content cannot be empty.");
+            return BadRequest(new { message = "Author name, author role or content cannot be empty." });
 
         // Perform the status check
         if (ticket.Status == TicketStatus.Closed)
-            return BadRequest("Closed tickets cannot receive new comments.");
+            return BadRequest(new { message = "Closed tickets cannot receive new comments." });
 
-        List<string> roles = new() { "Student", "Technician", "Admin" };        
+        var canonicalRole = AllowedRoles.FirstOrDefault(role => string.Equals(
+                role,
+                cleanAuthorRole,
+                StringComparison.OrdinalIgnoreCase));
 
-        // Check for valid author role
-        if (!roles.Contains(cleanAuthorRole, StringComparer.OrdinalIgnoreCase))
-                return BadRequest("Invalid author role. Allowed roles are Student, Technician, and Admin.");
+        if (canonicalRole is null)
+        {
+            return BadRequest(new
+            {
+                message = "Invalid author role. Allowed roles are Student, Technician, and Admin.";
+            });
 
         var comment = new TicketComment
         {
             TicketId = id,
             AuthorName = cleanAuthorName,
-            AuthorRole = cleanAuthorRole,
+            AuthorRole = canonicalRole,
             Content = cleanContent,
             CreatedAtUtc = DateTime.UtcNow
         };
