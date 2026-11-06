@@ -30,6 +30,9 @@ jobs:
       - name: Build .NET 10 API (Release)
         run: dotnet build SputnikDevs.Residence.SandboxApi/SputnikDevs.Residence.SandboxApi.csproj --configuration Release --no-restore
 
+      - name: Run Day 15 xUnit Unit Tests
+        run: dotnet test SputnikResidence.Tests/SputnikResidence.Tests.csproj --configuration Release --no-build --verbosity normal
+
       - name: Run Automated API Runtime & Endpoint Smoke Test
         run: |
           dotnet run --project SputnikDevs.Residence.SandboxApi/SputnikDevs.Residence.SandboxApi.csproj --configuration Release --no-build --urls "http://127.0.0.1:5035" &
