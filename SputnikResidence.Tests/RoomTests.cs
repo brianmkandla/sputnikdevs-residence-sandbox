@@ -5,7 +5,7 @@ namespace SputnikResidence.Tests;
 public class RoomTests
 {
     [Fact]
-    public void AvailableSports_PartiallyOccupied_ReturnsRemainingSpots()
+    public void AvailableSpots_PartiallyOccupied_ReturnsRemainingSpots()
     {
         var room = new Room { Capacity = 4 };
         room.Students.Add(new Student());
@@ -30,8 +30,8 @@ public class RoomTests
     [Fact]
     public void AvailableSpots_OverOccupied_ReturnsZeroNotNegative()
     {
-        var room = new Room { Capacity = 6 };
-        for (int i = 0; i < 6; i++)
+        var room = new Room { Capacity = 7 };
+        for (int i = 0; i < 7; i++)
             room.Students.Add(new Student());
         
         var result = room.AvailableSpots;
